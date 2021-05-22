@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
 var DEFAULT_RBDNS_ENDPOINT = "http://localhost:8080"
@@ -22,7 +23,13 @@ func main() {
 			fmt.Println("Usage: rbdns-client addRecord {key} {value}")
 			os.Exit(0)
 		}
-		fmt.Println(addRecord(os.Args[2], os.Args[3]))
+		startTime := time.Now()
+		resp := addRecord(os.Args[2], os.Args[3])
+		endTime := time.Now()
+		fmt.Println(resp)
+		// Originally in nanoseconds. Divide by 1 million to get milliseconds
+		elapsed := float64(endTime.Sub(startTime)) / float64(1000000)
+		fmt.Printf("%vms\n", elapsed)
 		return
 	}
 
@@ -31,7 +38,13 @@ func main() {
 			fmt.Println("Usage: rbdns-client query {key}")
 			os.Exit(0)
 		}
-		fmt.Println(query(os.Args[2]))
+		startTime := time.Now()
+		resp := query(os.Args[2])
+		endTime := time.Now()
+		fmt.Println(resp)
+		// Originally in nanoseconds. Divide by 1 million to get milliseconds
+		elapsed := float64(endTime.Sub(startTime)) / float64(1000000)
+		fmt.Printf("%vms\n", elapsed)
 		return
 	}
 
@@ -53,13 +66,26 @@ func main() {
 			if len(input) != 3 {
 				fmt.Println("Usage: addRecord {key} {value}")
 			}
-			fmt.Println(addRecord(input[1], input[2]))
+
+			startTime := time.Now()
+			resp := addRecord(input[1], input[2])
+			endTime := time.Now()
+			fmt.Println(resp)
+			// Originally in nanoseconds. Divide by 1 million to get milliseconds
+			elapsed := float64(endTime.Sub(startTime)) / float64(1000000)
+			fmt.Printf("%vms\n", elapsed)
 
 		case QUERY:
 			if len(input) != 2 {
 				fmt.Println("Usage: query {key}")
 			}
-			fmt.Println(query(input[1]))
+
+			startTime := time.Now()
+			resp := query(input[1])
+			endTime := time.Now()
+			fmt.Println(resp)
+			elapsed := float64(endTime.Sub(startTime)) / float64(1000000)
+			fmt.Printf("%vms\n", elapsed)
 
 		default:
 			fmt.Println("Unrecognized command")

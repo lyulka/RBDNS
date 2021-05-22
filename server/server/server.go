@@ -80,6 +80,7 @@ func (s *Server) QueryGet(w http.ResponseWriter, r *http.Request, _ httprouter.P
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), DEFAULT_DIAL_TIMEOUT)
+
 	resp, err := s.etcdClient.Get(ctx, key, clientv3.WithSerializable())
 	cancel()
 
@@ -93,14 +94,16 @@ func (s *Server) QueryGet(w http.ResponseWriter, r *http.Request, _ httprouter.P
 		return
 	}
 
-	if s.debugMode {
-		fmt.Printf("query(%s): success. Value: %s\n", key, resp.Kvs[0].Value)
-	}
-
 	if len(resp.Kvs) == 0 {
+		if s.debugMode {
+			fmt.Printf("query(%s): success. Value: %s\n", key, "null")
+		}
 		w.WriteHeader(http.StatusOK)
 		io.WriteString(w, "null")
 	} else {
+		if s.debugMode {
+			fmt.Printf("query(%s): success. Value: %s\n", key, resp.Kvs[0].Value)
+		}
 		w.WriteHeader(http.StatusOK)
 		io.WriteString(w, string(resp.Kvs[0].Value))
 	}

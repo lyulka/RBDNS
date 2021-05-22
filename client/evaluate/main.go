@@ -15,10 +15,10 @@ var ADD_RECORD string = "addRecord"
 var QUERY string = "query"
 
 var ADD_RECORD_LOG_MSG_INVOKING string = "%v INFO   : invoking addRecord(%s, %s), no. %v, client %v\n"
-var ADD_RECORD_LOG_MSG_SUCCESS string = "%v INFO   : addRecord(%s, %s) success, no. %v, client %v, latency %vms\n"
+var ADD_RECORD_LOG_MSG_SUCCESS string = "%v INFO   : addRecord(%s, %s) success, no. %v, client %v, latency %s\n"
 var ADD_RECORD_LOG_MSG_TIMEOUT string = "%v WARN   : addRecord(%s, %s) timeout, no. %v, client %v\n"
 var QUERY_LOG_MSG_INVOKING string = "%v INFO   : invoking query(%s), no. %v, client %v\n"
-var QUERY_LOG_MSG_SUCCESS string = "%v INFO   : query(%s) success, no. %v, client %v, latency %vms\n"
+var QUERY_LOG_MSG_SUCCESS string = "%v INFO   : query(%s) success, no. %v, client %v, latency %s\n"
 var QUERY_LOG_MSG_TIMEOUT string = "%v WARN   : query(%s) timeout, no. %v, client %v\n"
 
 func main() {
@@ -120,30 +120,29 @@ func thread(command string, threadNum int, opsPerThread int, outDir string, done
 	// Seed random number generator
 	rand.Seed(time.Now().UnixNano())
 
-	for i := 0; i <= opsPerThread; i++ {
+	for i := 1; i <= opsPerThread; i++ {
 
 		if command == ADD_RECORD {
 			key := fmt.Sprint(rand.Intn(1000))
 			value := fmt.Sprint(rand.Intn(1000))
 
-			startTime := time.Now()
 			out, err := exec.Command("rbdns-client", ADD_RECORD, key, value).Output()
-			endTime := time.Now()
-
-			// Originally in nanoseconds. Divide by 1 million to get milliseconds
-			elapsed := float64(endTime.Sub(startTime)) / float64(1000000)
 
 			if err != nil {
 				fmt.Println("Error whilst running command: " + ADD_RECORD)
 				os.Exit(1)
 			}
 
-			// The reason I TrimSpace is to avoid CRLF and LF shenanigans
-			// in different platforms and environments.
-			if strings.TrimSpace(string(out)) == "Internal server error" {
+			if strings.Contains(string(out), "Internal server error") ||
+				strings.Contains(string(out), "not OK") {
 				outputFile.WriteString(fmt.Sprintf(ADD_RECORD_LOG_MSG_TIMEOUT,
 					time.Now(), key, value, i, threadNum))
 			} else {
+				o := strings.Split(string(out), "\n")
+
+				// RBDNS client in single command mode prints out elapsed time
+				// and the end of a successful result.
+				elapsed := o[len(o)-2]
 				outputFile.WriteString(fmt.Sprintf(ADD_RECORD_LOG_MSG_SUCCESS,
 					time.Now(), key, value, i, threadNum, elapsed))
 			}
@@ -151,20 +150,20 @@ func thread(command string, threadNum int, opsPerThread int, outDir string, done
 		} else if command == QUERY {
 			key := fmt.Sprint(rand.Intn(1000))
 
-			startTime := time.Now()
 			out, err := exec.Command("rbdns-client", QUERY, key).Output()
-			endTime := time.Now()
-			elapsed := float64(endTime.Sub(startTime)) / float64(1000000)
 
 			if err != nil {
 				fmt.Println("Error whilst running command: " + QUERY)
 				os.Exit(1)
 			}
 
-			if strings.TrimSpace(string(out)) == "Internal server error" {
+			if strings.Contains(string(out), "Internal server error") ||
+				strings.Contains(string(out), "not OK") {
 				outputFile.WriteString(fmt.Sprintf(QUERY_LOG_MSG_TIMEOUT,
 					time.Now(), key, i, threadNum))
 			} else {
+				o := strings.Split(string(out), "\n")
+				elapsed := o[len(o)-2]
 				outputFile.WriteString(fmt.Sprintf(QUERY_LOG_MSG_SUCCESS,
 					time.Now(), key, i, threadNum, elapsed))
 			}
