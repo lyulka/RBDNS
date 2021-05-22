@@ -1,3 +1,5 @@
+# RBDNS - Raft-Backed Domain Name System
+
 # ETCD guarantees
 etcd does not ensure linearizability for watch operations. Users are expected to verify
 the revision of watch responses to ensure correct ordering.

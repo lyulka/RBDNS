@@ -80,7 +80,7 @@ func (s *Server) QueryGet(w http.ResponseWriter, r *http.Request, _ httprouter.P
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), DEFAULT_DIAL_TIMEOUT)
-	resp, err := s.etcdClient.Get(ctx, key)
+	resp, err := s.etcdClient.Get(ctx, key, clientv3.WithSerializable())
 	cancel()
 
 	if err != nil {
@@ -88,6 +88,7 @@ func (s *Server) QueryGet(w http.ResponseWriter, r *http.Request, _ httprouter.P
 		fmt.Println(err)
 
 		w.WriteHeader(http.StatusInternalServerError)
+		io.WriteString(w, "Internal server error")
 
 		return
 	}
